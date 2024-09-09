@@ -1,0 +1,102 @@
+Directiva:
+
+import { Directive, ElementRef, HostListener } from "@angular/core";
+import { NoEmojisService } from "../services/no-emojis.service";
+
+@Directive({
+  selector: "[appNoEmojis]",
+  standalone: true,
+})
+export class NoEmojisDirective {
+  constructor(
+    private el: ElementRef,
+    private noEmojisService: NoEmojisService,
+  ) {}
+
+  @HostListener("input", ["$event"])
+  onInput(event: Event): void {
+    const input = this.el.nativeElement as HTMLInputElement;
+    input.value = this.noEmojisService.filterText(input.value);
+    input.dispatchEvent(new Event("input"));
+  }
+}
+
+
+Servicio:
+
+import { Injectable } from "@angular/core";
+import emojiRegex from "emoji-regex";
+
+@Injectable({
+  providedIn: "root",
+})
+export class NoEmojisService {
+  private emojiRegex: RegExp = emojiRegex();
+
+  filterText(text: string): string {
+    return text.replace(this.emojiRegex, "");
+  }
+}
+
+Component.ts
+
+import { Component, OnInit } from "@angular/core";
+import { RouterOutlet } from "@angular/router";
+import { NoEmojisDirective } from "./directives/no-emojis.directive";
+import { OnlyEmailDirective } from "./directives/only-email.directive";
+import {
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from "@angular/forms";
+
+@Component({
+  selector: "app-root",
+  standalone: true,
+  imports: [
+    RouterOutlet,
+    NoEmojisDirective,
+    OnlyEmailDirective,
+    ReactiveFormsModule,
+  ],
+  templateUrl: "./app.component.html",
+  styleUrls: ["./app.component.scss"],
+})
+export class AppComponent implements OnInit {
+  title = "pruebas";
+
+  validateForm: FormGroup = new FormGroup({
+    email: new FormControl("", [Validators.required, Validators.email]),
+    password: new FormControl("", Validators.required),
+  });
+
+  ngOnInit() {
+    // Subscribe to the value changes of the email FormControl
+    this.validateForm.get("email")!.valueChanges.subscribe((value) => {
+      console.log("Email Value:", value);
+    });
+  }
+
+  validateFormGroup() {
+    console.log(this.validateForm);
+  }
+}
+
+
+Component.html
+
+<div [formGroup]="validateForm">
+    <h1>Pruebas emojis</h1>
+    <input appNoEmojis placeholder="Ingresa emojis" formControlName="email" />
+    <input placeholder="Ingresa tu contraseña" formControlName="password" />
+    <br />
+    <button (click)="validateFormGroup()" [disabled]="validateForm.invalid">
+        Iniciar sesión
+    </button>
+</div>
+
+
+Instalacion de dependencia de Espresion regular de EMOJIS
+
+npm install emoji-regex
